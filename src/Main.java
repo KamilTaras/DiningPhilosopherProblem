@@ -1,9 +1,6 @@
-import java.sql.SQLOutput;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 public class Main {
     public static void main(String[] args) {
-        int n = 50;
+        int n = 5;
 
         Philosopher[] philosophers = new Philosopher[n];
         Fork[] forks = new Fork[n];
@@ -45,71 +42,53 @@ class Philosopher extends Thread {
     private int eatenDishes;
 
 
+
+
     @Override
     public void run() {
+
         while (true) {
-            tryTakeLowerPriorityFork();
-            tryTakeHigherPriorityFork();
+            pickFork(Priority.LOWER);
+            pickFork(Priority.HIGHER);
             eat();
-            putLowerPriorityForkDown();
-            putHigherPriorityForkDown();
+            putForkDown(Priority.LOWER);
+            putForkDown(Priority.HIGHER);
         }
     }
 
-    boolean hasLeftForkLowerID(){
+    boolean getHasLeftForkLowerID(){
         return leftFork.getID() < rightFork.getID();
     }
-    boolean hasRightForkLowerID(){
+    boolean getHasRightForkLowerID(){
         return leftFork.getID() > rightFork.getID();
     }
 
-    public boolean isLeftForkBeingHold() {
-        return isLeftForkBeingHold;
-    }
+    void pickFork(Priority priority){
+        boolean hasLeftForkLowerID;
+        boolean hasRightForkLowerID;
 
-    public void setLeftForkBeingHold(boolean leftForkBeingHold) {
-        isLeftForkBeingHold = leftForkBeingHold;
-    }
-
-    public boolean isRightForkBeingHold() {
-        return isRightForkBeingHold;
-    }
-
-    public void setRightForkBeingHold(boolean rightForkBeingHold) {
-        isRightForkBeingHold = rightForkBeingHold;
-    }
-
-    void tryTakeLowerPriorityFork() {
+        if(priority == Priority.LOWER) {
+            hasLeftForkLowerID = getHasLeftForkLowerID();
+            hasRightForkLowerID = getHasRightForkLowerID();
+        }
+        else {
+            hasLeftForkLowerID = !getHasLeftForkLowerID();
+            hasRightForkLowerID = !getHasRightForkLowerID();
+        }
         synchronized (this) {
-            if (hasLeftForkLowerID() && !leftFork.isTaken()) {
+            if (hasLeftForkLowerID && !leftFork.isTaken()) {
                 leftFork.setIsTaken(true);
                 isLeftForkBeingHold = true;
 //                System.out.println("Philosopher " +ID + " takes left fork with ID "+leftFork.getID());
             }
         }
         synchronized (this) {
-            if (hasRightForkLowerID() && !rightFork.isTaken()) {
+            if (hasRightForkLowerID && !rightFork.isTaken()) {
                 rightFork.setIsTaken(true);
                 isRightForkBeingHold = true;
 //                System.out.println("Philosopher " +ID + " takes right fork with ID "+leftFork.getID());
             }
         }
-    }
-
-    void tryTakeHigherPriorityFork() {
-        synchronized (this) {
-            if (!hasLeftForkLowerID() && !leftFork.isTaken()) {
-                leftFork.setIsTaken(true);
-                isLeftForkBeingHold = true;
-            }
-        }
-        synchronized (this) {
-            if (!hasRightForkLowerID() && !rightFork.isTaken()) {
-                rightFork.setIsTaken(true);
-                isRightForkBeingHold = true;
-            }
-        }
-
     }
 
     void eat() {
@@ -123,16 +102,26 @@ class Philosopher extends Thread {
                 throw new RuntimeException(e);
             }
             eatenDishes++;
-            System.out.println("Philosopher " + ID + " has EATEN " +eatenDishes + "(yummy)");
+            System.out.println("Philosopher " + ID + " has EATEN " +eatenDishes + " (yummy)");
         }
 
 
     }
 
+    void putForkDown(Priority priority){
+        boolean hasLeftForkLowerID;
+        boolean hasRightForkLowerID;
 
-    void putLowerPriorityForkDown() {
+        if(priority == Priority.LOWER) {
+            hasLeftForkLowerID = getHasLeftForkLowerID();
+            hasRightForkLowerID = getHasRightForkLowerID();
+        }
+        else {
+            hasLeftForkLowerID = !getHasLeftForkLowerID();
+            hasRightForkLowerID = !getHasRightForkLowerID();
+        }
         synchronized (this) {
-            if (hasLeftForkLowerID() && isLeftForkBeingHold) {
+            if (hasLeftForkLowerID && isLeftForkBeingHold) {
                 leftFork.setIsTaken(false);
                 isLeftForkBeingHold = false;
 //                System.out.println("Philosopher " +ID + " put left fork (with ID "+leftFork.getID()+") down");
@@ -144,7 +133,7 @@ class Philosopher extends Thread {
             }
         }
         synchronized (this) {
-            if(hasRightForkLowerID() && isRightForkBeingHold){
+            if(hasRightForkLowerID && isRightForkBeingHold){
                 rightFork.setIsTaken(false);
                 isRightForkBeingHold = false;
 //                System.out.println("Philosopher " +ID + " put right fork (with ID "+ rightFork.getID() + ") down");
@@ -155,37 +144,6 @@ class Philosopher extends Thread {
                 }
             }
         }
-        isPhilosopherThinking();
-    }
-
-    void putHigherPriorityForkDown() {
-        synchronized (this) {
-            if (!hasLeftForkLowerID() && isLeftForkBeingHold) {
-                leftFork.setIsTaken(false);
-                isLeftForkBeingHold = false;
-//                System.out.println("Philosopher " +ID + " put left fork (with ID "+leftFork.getID()+") put down");
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-
-            }
-        }
-        synchronized (this) {
-            if(!hasRightForkLowerID() && isRightForkBeingHold){
-                rightFork.setIsTaken(false);
-                isRightForkBeingHold = false;
-//                System.out.println("Philosopher " +ID + " put right fork (with ID "+ rightFork.getID() + ") put down");
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-
-            }
-        }
-
         isPhilosopherThinking();
     }
     boolean isPhilosopherThinking(){
